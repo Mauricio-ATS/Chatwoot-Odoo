@@ -76,6 +76,22 @@ class ChatwootInstance(models.Model):
         response = requests.post(url, json=payload, headers=headers)
         return response.json()
     
+    def get_unique_conversation(self, conversation_id):
+        url_conversation = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}"
+        headers = {
+            "api_access_token": self.api_token
+        }
+        response_conversation = requests.get(url_conversation, headers=headers)
+        return response_conversation.json()
+
+    def get_message(self, conversation_id):
+        url_message = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/messages"
+        headers = {
+            "api_access_token": self.api_token
+        }
+        response_message = requests.get(url_message, headers=headers)
+        return response_message.json()
+
     def set_resolved_conversation(self, conversation_id):
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/toggle_status"
         payload = {
