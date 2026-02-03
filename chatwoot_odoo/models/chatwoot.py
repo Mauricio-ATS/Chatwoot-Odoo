@@ -1,7 +1,7 @@
 import base64
 import requests
-import requests
-import tempfile
+import io
+import mimetypes
 import os
 from odoo import models, fields
 
@@ -13,6 +13,13 @@ class ChatwootInstance(models.Model):
         string="Base URL",
         help="URL base do Chatwoot"
     )
+
+    code = fields.Char(
+    string="Código Técnico",
+    required=True,
+    help="Chave usada para mapear o usuário no selection"
+)
+    name = fields.Char(required=True)
 
     api_token = fields.Char(
         string="API Token",
@@ -49,15 +56,16 @@ class ChatwootInstance(models.Model):
                 headers=headers
             )
             created_data = create_response.json()
-            return created_data.get("data", {}).get("id")
+            id = created_data.get("payload", {}).get("contact", {}).get("id")
+            if id:
+                return id
+            else:
+                raise Exception(f"Impossivel Criar Contato no Chatwoot") 
 
-    def create_new_conversation(self, phone_number, partner, team_id, assignee_id, message=None):
+    def create_new_conversation(self, phone_number, partner, team_id, assignee_id):
         #TODO Ainda não sei como tratar a conversa, ideias: Busca pela conversa aberta para aquele contato ou
         # criar uma nova conversa sempre e fecha-la depois de enviar a mensagem, o que obriga o user a enviar tudo que for necessário de uma vez só.
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations"
-        content = message
-        if not content:
-            content = f"Olá {partner.name}!"
         payload = {
             "contact_id": self.get_contact_id(phone_number, partner),
             "source_id": phone_number,
@@ -65,9 +73,9 @@ class ChatwootInstance(models.Model):
             "team_id": int(team_id),
             "assignee_id": int(assignee_id),
             "status": "open",
-            "message": {
-                "content": content,
-            }
+            # "message": {
+            #     "content": content,
+            # }
         }
         headers = {
             "api_access_token": self.api_token,
@@ -118,27 +126,38 @@ class ChatwootInstance(models.Model):
         return response.json()
 
     def send_chatwoot_attachment(self, conversation_id, attachment, message=None):
-        """
-        attachment: record ir.attachment
-        """
         file_content = base64.b64decode(attachment.datas)
-        with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            tmp.write(file_content)
-            tmp_path = tmp.name
+        file_stream = io.BytesIO(file_content)
+
+        filename = attachment.name or "arquivo"
+
+        if "." not in filename:
+            filename += ".pdf"
+
+        mimetype = attachment.mimetype
+        if not mimetype:
+            mimetype, _ = mimetypes.guess_type(filename)
+
+        if not mimetype:
+            mimetype = "application/pdf"
+
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/messages"
         headers = {
             "api_access_token": self.api_token
         }
+
         files = {
             "attachments[]": (
-                attachment.name or "arquivo",
-                open(tmp_path, "rb"),
-                attachment.mimetype or "application/octet-stream"
+                filename,
+                file_stream,
+                mimetype
             )
         }
+
         data = {}
         if message:
             data["content"] = message
+
         response = requests.post(
             url,
             headers=headers,
@@ -147,9 +166,8 @@ class ChatwootInstance(models.Model):
             timeout=30,
         )
         response.raise_for_status()
-        os.unlink(tmp_path)
         return response.json()
-    
+
     def add_label_to_conversation(self, conversation_id):
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/labels"
         payload = {

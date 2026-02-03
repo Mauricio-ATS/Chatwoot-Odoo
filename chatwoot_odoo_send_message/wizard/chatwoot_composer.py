@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+from dateutil.relativedelta import relativedelta
 
 class ChatwootComposer(models.TransientModel):
     _name = 'chatwoot.composer'
@@ -69,34 +70,42 @@ class ChatwootComposer(models.TransientModel):
     res_id = fields.Integer('Related Document ID')
 
     @api.model
-    def default_get(self, fields):
-        res = super(ChatwootComposer, self).default_get(fields)
+    def default_get(self, fields_x):
+        res = super(ChatwootComposer, self).default_get(fields_x)
 
         if self.env.context.get('active_model') and self.env.context.get('active_id'):
             res['model'] = self.env.context['active_model']
             res['res_id'] = self.env.context['active_id']
             record = self.env[res['model']].browse(res['res_id'])
-            if res['model'] == 'res.partner' and not record.phone_sanitized:
+            if res['model'] == 'res.partner' and not record.mobile:
                 raise UserError(_("Este Contato deve ter um número de telefone válido"))
-            if res['model'] == 'crm.lead' and not record.partner_id.phone_sanitized:
+            if res['model'] == 'crm.lead' and not record.partner_id.mobile:
                 raise UserError(_("O Contato do Lead deve ter um número de telefone válido"))
             if hasattr(record, 'partner_id') and record.partner_id:
                 partner_ids = record.partner_id.ids
                 res['partner_id'] = [(6, 0, partner_ids)]
-            partner = res['res_id'].partner_id.id if res['model'] == 'crm.lead' else res['res_id']
-            invoices = self.env['account.move'].search([
-                ("partner_id", "=", partner),
-                ("payment_state", "=", "not_paid"),
-                ("invoice_date", ">=", "2025-12-01") #pegar do Mês correto
-            ])
-            for inv in invoices:
-                if not inv.attachment_ids:
-                    attachment = self.env['mail.mail'].search([
-                        ('res_id', '=', inv.id)
-                    ]).attachment_ids
-                else:
-                    attachment = inv.attachment_ids
-                res['attachment_ids'] = [(6, 0, attachment.ids)]
+            # Somente pelo faturamento vai trazer as faturas abertas;
+            if res['model'] == 'account.move':
+                partner = self.env['account.move'].browse(res['res_id']).partner_id.id
+                today = fields.Date.context_today(self)
+                start_last_month = (today.replace(day=1) - relativedelta(months=1))
+                end_month = today.replace(day=1) + relativedelta(months=1)
+                
+                invoices = self.env['account.move'].search([
+                    ("partner_id", "=", partner),
+                    ("payment_state", "=", "not_paid"),
+                    ("invoice_date", ">=", start_last_month),
+                    ("invoice_date", "<", end_month),
+                    ("move_type", "=", "out_invoice"),
+                ])
+                for inv in invoices:
+                    if not inv.attachment_ids:
+                        attachment = self.env['mail.mail'].search([
+                            ('res_id', '=', inv.id)
+                        ]).attachment_ids
+                    else:
+                        attachment = inv.attachment_ids
+                    res['attachment_ids'] = [(6, 0, attachment.ids)]
 
         instance = self.env['chatwoot.instance'].search([('account_id', '=', '1')], limit=1)
         if instance:
@@ -131,7 +140,7 @@ class ChatwootComposer(models.TransientModel):
             self.body = self.template_id.body
             if self.template_id.attachment_ids:
                 self.attachment_ids = [(6, 0, self.template_id.attachment_ids.ids)]
-            else:
+            if not self.attachment_ids:
                 self.attachment_ids = [(5, 0, 0)]  # remove anexos caso template não tenha
 
     def action_send_message(self):
@@ -179,3 +188,20 @@ class ChatwootComposer(models.TransientModel):
             raise UserError(_("Failed to send WhatsApp message: %s") % e)
 
         return {'type': 'ir.actions.act_window_close'}
+    
+    @api.onchange('chatwoot_user')
+    def _onchange_chatwoot_user(self):
+        if not self.chatwoot_user:
+            self.chatwoot_id = False
+            return
+
+        instance = self.env['chatwoot.instance'].search(
+            [('code', '=', self.chatwoot_user)],
+            limit=1
+        )
+
+        if not instance:
+            raise UserError("Instância Chatwoot não encontrada para este usuário")
+
+        self.chatwoot_id = instance.id
+
