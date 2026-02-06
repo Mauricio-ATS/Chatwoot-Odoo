@@ -3,7 +3,7 @@
 
 {
     'name': 'Odoo - Chatwoot',
-    'version': '18.0',
+    'version': '16.0.1.0',
     'category': 'Others',
     'license': 'AGPL-3',
     'sequence': 2,

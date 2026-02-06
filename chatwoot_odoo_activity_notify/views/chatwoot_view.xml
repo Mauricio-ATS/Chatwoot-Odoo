@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <odoo>
-    <record id="view_chatwoot_activity_due_days_list" model="ir.ui.view">
-        <field name="name">chatwoot.activity_due_days.list</field>
+    <record id="view_chatwoot_activity_due_days_tree" model="ir.ui.view">
+        <field name="name">chatwoot.activity_due_days.tree</field>
         <field name="model">chatwoot.instance</field>
-        <field name="inherit_id" ref="chatwoot_odoo.view_chatwoot_instance_list"/>
+        <field name="inherit_id" ref="chatwoot_odoo.view_chatwoot_instance_tree"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='api_token']" position="after">
                 <field name="activity_due_days"/>
