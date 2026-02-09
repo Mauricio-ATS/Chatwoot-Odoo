@@ -26,6 +26,14 @@ class ChatwootComposer(models.TransientModel):
         string="Instância", 
         domain=[('account_id', '=', "1")],
     )
+
+    chatwoot_inbox_id = fields.Many2one(
+    "chatwoot.inbox",
+    string="Inbox",
+    domain="[('instance_id','=',chatwoot_id)]"
+)
+
+
     chatwoot_user = fields.Selection(
         selection=[
             ('1', 'Carlos'),
@@ -145,31 +153,48 @@ class ChatwootComposer(models.TransientModel):
 
     def action_send_message(self):
         self.ensure_one()
+
         if not self.body and not self.attachment_ids:
             raise UserError(_("Please enter a message or add an attachment."))
 
-     
         record = self.env[self.model].browse(self.res_id) if self.model and self.res_id else None
 
         try:
+            if not self.chatwoot_inbox_id:
+                raise UserError(_("Selecione a Inbox do Chatwoot"))
+
             for partner in self.partner_id:
                 phone_number = f"{partner.phone_sanitized}"
-                conversation_id = self.chatwoot_id.create_new_conversation(phone_number, partner, self.chatwoot_team, self.chatwoot_user)
-                if conversation_id:
-                    conversation_id = conversation_id['id']
-                else:
+
+                conversation = self.chatwoot_id.create_new_conversation(
+                    phone_number,
+                    partner,
+                    self.chatwoot_team,
+                    self.chatwoot_user,
+                    self.chatwoot_inbox_id
+                )
+
+                conversation_id = conversation.get('id')
+                if not conversation_id:
                     raise UserError(_("Failed to create conversation for %s") % partner.name)
+
                 if self.attachment_ids:
                     first_attachment = self.attachment_ids[0]
-                    self.chatwoot_id.send_chatwoot_attachment( 
+
+                    self.chatwoot_id.send_chatwoot_attachment(
                         conversation_id,
                         first_attachment,
                         message=self.body
                     )
+
                     for attachment in self.attachment_ids[1:]:
-                        self.chatwoot_id.send_chatwoot_attachment(conversation_id, attachment)
+                        self.chatwoot_id.send_chatwoot_attachment(
+                            conversation_id,
+                            attachment
+                        )
                 else:
                     self.chatwoot_id.send_text(conversation_id, self.body)
+
                 if self.chatwoot_status == "resolved":
                     self.chatwoot_id.add_label_to_conversation(conversation_id)
                     self.chatwoot_id.set_resolved_conversation(conversation_id)
@@ -177,6 +202,7 @@ class ChatwootComposer(models.TransientModel):
             if record:
                 names = ', '.join(self.partner_id.mapped('name'))
                 chatter_body = _("WhatsApp message sent to %s:\n%s") % (names, self.body)
+
                 record.message_post(
                     body=chatter_body,
                     message_type='comment',
@@ -188,7 +214,8 @@ class ChatwootComposer(models.TransientModel):
             raise UserError(_("Failed to send WhatsApp message: %s") % e)
 
         return {'type': 'ir.actions.act_window_close'}
-    
+
+        
     @api.onchange('chatwoot_user')
     def _onchange_chatwoot_user(self):
         if not self.chatwoot_user:

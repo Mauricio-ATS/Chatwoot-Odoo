@@ -14,6 +14,13 @@ class ChatwootInstance(models.Model):
         help="URL base do Chatwoot"
     )
 
+    inbox_ids = fields.One2many(
+    "chatwoot.inbox",
+    "instance_id",
+    string="Inboxes"
+)
+
+
     code = fields.Char(
     string="Código Técnico",
     required=True,
@@ -62,14 +69,14 @@ class ChatwootInstance(models.Model):
             else:
                 raise Exception(f"Impossivel Criar Contato no Chatwoot") 
 
-    def create_new_conversation(self, phone_number, partner, team_id, assignee_id):
+    def create_new_conversation(self, phone_number, partner, team_id, assignee_id, inbox_record):
         #TODO Ainda não sei como tratar a conversa, ideias: Busca pela conversa aberta para aquele contato ou
         # criar uma nova conversa sempre e fecha-la depois de enviar a mensagem, o que obriga o user a enviar tudo que for necessário de uma vez só.
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations"
         payload = {
             "contact_id": self.get_contact_id(phone_number, partner),
             "source_id": phone_number,
-            "inbox_id": 5,
+            "inbox_id":    inbox_record.inbox_id,
             "team_id": int(team_id),
             "assignee_id": int(assignee_id),
             "status": "open",
@@ -183,3 +190,43 @@ class ChatwootInstance(models.Model):
         }
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         return response.json()
+    
+    def action_sync_inboxes(self):
+        url = f"{self.base_url}/api/v1/accounts/{self.account_id}/inboxes"
+        headers = {"api_access_token": self.api_token}
+
+        r = requests.get(url, headers=headers, timeout=30)
+        data = r.json()
+
+        Inbox = self.env["chatwoot.inbox"]
+
+        for inbox in data.get("payload", []):
+            rec = Inbox.search([
+                ("instance_id", "=", self.id),
+                ("inbox_id", "=", inbox["id"])
+            ], limit=1)
+
+            vals = {
+                "name": inbox["name"],
+                "inbox_id": inbox["id"],
+                "instance_id": self.id
+            }
+
+            if rec:
+                rec.write(vals)
+            else:
+                Inbox.create(vals)
+
+    
+
+class ChatwootInbox(models.Model):
+    _name = "chatwoot.inbox"
+    _description = "Chatwoot Inbox"
+
+    name = fields.Char(required=True)
+    inbox_id = fields.Integer(required=True)
+    instance_id = fields.Many2one(
+        "chatwoot.instance",
+        required=True,
+        ondelete="cascade"
+    )
