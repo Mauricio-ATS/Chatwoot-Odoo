@@ -21,14 +21,33 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form>
+
+                <!-- 👇 ADICIONADO — botão sync -->
+                <header>
+                    <button name="action_sync_inboxes"
+                            string="Sincronizar Inboxes"
+                            type="object"
+                            class="oe_highlight"/>
+                </header>
+
                 <sheet>
                     <group>
                         <field name="base_url"/>
                         <field name="code"/>
-                        <field name="name" />
+                        <field name="name"/>
                         <field name="api_token"/>
                         <field name="account_id"/>
                     </group>
+
+                    <group string="Inboxes">
+                        <field name="inbox_ids">
+                            <tree editable="bottom">
+                                <field name="name"/>
+                                <field name="inbox_id"/>
+                            </tree>
+                        </field>
+                    </group>
+
                 </sheet>
             </form>
         </field>
