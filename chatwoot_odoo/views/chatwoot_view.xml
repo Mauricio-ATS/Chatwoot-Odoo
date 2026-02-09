@@ -7,9 +7,9 @@
         <field name="type">list</field>
         <field name="arch" type="xml">
             <list>
+                <field name="base_url"/>
                 <field name="name"/>
-                <field name="code"/>
-                <field name="api_token"/>
+                <field name="user_ids" widget="many2many"/>
             </list>
         </field>
     </record>
@@ -24,10 +24,18 @@
                 <sheet>
                     <group>
                         <field name="base_url"/>
-                        <field name="code"/>
-                        <field name="name" />
-                        <field name="api_token"/>
+                        <field name="name"/>
                         <field name="account_id"/>
+                    </group>
+
+                    <group string="Usuarios">
+                        <field name="user_ids">
+                            <list>
+                                <field name="name"/>
+                                <field name="code"/>
+                                <field name="inbox_ids"/>
+                            </list>
+                        </field>
                     </group>
                 </sheet>
             </form>

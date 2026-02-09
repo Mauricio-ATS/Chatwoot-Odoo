@@ -24,7 +24,7 @@ class HelpDeskTicket(models.Model):
         self.chatwoot_id = chatwoot_id = self.env['chatwoot.instance'].search([("account_id", "=", "1")], limit=1)
         url = f"{chatwoot_id.base_url}/api/v1/accounts/{chatwoot_id.account_id}/conversations"
         headers = {
-            "api_access_token": chatwoot_id.api_token
+            "api_access_token": chatwoot_id.user_ids[0].api_token
         }
         params = {
             "assignee_type": "all",
@@ -61,7 +61,7 @@ class HelpDeskTicket(models.Model):
             team_rec = self.env['helpdesk.ticket.team'].search([('name', 'ilike', team)], limit=1)
             team_id = team_rec.id if team_rec else False
 
-            messages_data = chatwoot_id.get_message(conversation_id)
+            messages_data = chatwoot_id.get_message(chatwoot_id.user_ids[0].api_token, conversation_id)
             messages = messages_data.get("payload", [])
 
             mensagem = ""
