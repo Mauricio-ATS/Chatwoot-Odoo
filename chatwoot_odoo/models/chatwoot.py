@@ -14,38 +14,28 @@ class ChatwootInstance(models.Model):
         help="URL base do Chatwoot"
     )
 
-    inbox_ids = fields.One2many(
-    "chatwoot.inbox",
-    "instance_id",
-    string="Inboxes"
-)
+    user_ids = fields.One2many(
+        "chatwoot.users",
+        "instance_id",
+        string="Usuarios"
+    )
 
-
-    code = fields.Char(
-    string="Código Técnico",
-    required=True,
-    help="Chave usada para mapear o usuário no selection"
-)
     name = fields.Char(required=True)
 
-    api_token = fields.Char(
-        string="API Token",
-        help="Token de acesso à API do Chatwoot"
-    )
     account_id = fields.Char(
         string="Account ID",
         default="1",
         help="ID da conta do Chatwoot"
     )
 
-    def get_contact_id(self, phone_number, partner):
+    def get_contact_id(self, token, phone_number, partner):
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/contacts/search"
         params = {
             "q": phone_number,
             "page": 1,
         }
         headers = {
-            "api_access_token": self.api_token
+            "api_access_token": token
         }
         response = requests.get(url, headers=headers, params=params)
         data = response.json()
@@ -69,12 +59,12 @@ class ChatwootInstance(models.Model):
             else:
                 raise Exception(f"Impossivel Criar Contato no Chatwoot") 
 
-    def create_new_conversation(self, phone_number, partner, team_id, assignee_id, inbox_record):
+    def create_new_conversation(self, token, phone_number, partner, team_id, assignee_id, inbox_record):
         #TODO Ainda não sei como tratar a conversa, ideias: Busca pela conversa aberta para aquele contato ou
         # criar uma nova conversa sempre e fecha-la depois de enviar a mensagem, o que obriga o user a enviar tudo que for necessário de uma vez só.
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations"
         payload = {
-            "contact_id": self.get_contact_id(phone_number, partner),
+            "contact_id": self.get_contact_id(token, phone_number, partner),
             "source_id": phone_number,
             "inbox_id":    inbox_record.inbox_id,
             "team_id": int(team_id),
@@ -85,35 +75,35 @@ class ChatwootInstance(models.Model):
             # }
         }
         headers = {
-            "api_access_token": self.api_token,
+            "api_access_token": token,
             "Content-Type": "application/json"
         }
         response = requests.post(url, json=payload, headers=headers)
         return response.json()
     
-    def get_unique_conversation(self, conversation_id):
+    def get_unique_conversation(self, token, conversation_id):
         url_conversation = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}"
         headers = {
-            "api_access_token": self.api_token
+            "api_access_token": token
         }
         response_conversation = requests.get(url_conversation, headers=headers)
         return response_conversation.json()
 
-    def get_message(self, conversation_id):
+    def get_message(self, token, conversation_id):
         url_message = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/messages"
         headers = {
-            "api_access_token": self.api_token
+            "api_access_token": token
         }
         response_message = requests.get(url_message, headers=headers)
         return response_message.json()
 
-    def set_resolved_conversation(self, conversation_id):
+    def set_resolved_conversation(self, token, conversation_id):
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/toggle_status"
         payload = {
             "status": "resolved",
         }
         headers = {
-            "api_access_token": self.api_token,
+            "api_access_token": token,
         }
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         if response.status_code != 200:
@@ -121,18 +111,18 @@ class ChatwootInstance(models.Model):
         else:
             return True
 
-    def send_text(self, conversation_id, message):
+    def send_text(self, token, conversation_id, message):
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/messages"
         payload = {
             "content": message,
         }
         headers = {
-            "api_access_token": self.api_token,
+            "api_access_token": token,
         }
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         return response.json()
 
-    def send_chatwoot_attachment(self, conversation_id, attachment, message=None):
+    def send_chatwoot_attachment(self, token, conversation_id, attachment, message=None):
         file_content = base64.b64decode(attachment.datas)
         file_stream = io.BytesIO(file_content)
 
@@ -153,7 +143,7 @@ class ChatwootInstance(models.Model):
 
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/messages"
         headers = {
-            "api_access_token": self.api_token
+            "api_access_token": token
         }
 
         files = {
@@ -178,7 +168,7 @@ class ChatwootInstance(models.Model):
         response.raise_for_status()
         return response.json()
 
-    def add_label_to_conversation(self, conversation_id):
+    def add_label_to_conversation(self, token, conversation_id):
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/conversations/{conversation_id}/labels"
         payload = {
             "labels": [
@@ -186,47 +176,7 @@ class ChatwootInstance(models.Model):
             ]
         }
         headers = {
-            "api_access_token": self.api_token,
+            "api_access_token": token,
         }
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         return response.json()
-    
-    def action_sync_inboxes(self):
-        url = f"{self.base_url}/api/v1/accounts/{self.account_id}/inboxes"
-        headers = {"api_access_token": self.api_token}
-
-        r = requests.get(url, headers=headers, timeout=30)
-        data = r.json()
-
-        Inbox = self.env["chatwoot.inbox"]
-
-        for inbox in data.get("payload", []):
-            rec = Inbox.search([
-                ("instance_id", "=", self.id),
-                ("inbox_id", "=", inbox["id"])
-            ], limit=1)
-
-            vals = {
-                "name": inbox["name"],
-                "inbox_id": inbox["id"],
-                "instance_id": self.id
-            }
-
-            if rec:
-                rec.write(vals)
-            else:
-                Inbox.create(vals)
-
-    
-
-class ChatwootInbox(models.Model):
-    _name = "chatwoot.inbox"
-    _description = "Chatwoot Inbox"
-
-    name = fields.Char(required=True)
-    inbox_id = fields.Integer(required=True)
-    instance_id = fields.Many2one(
-        "chatwoot.instance",
-        required=True,
-        ondelete="cascade"
-    )

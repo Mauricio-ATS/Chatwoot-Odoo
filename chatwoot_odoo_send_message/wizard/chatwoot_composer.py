@@ -24,29 +24,18 @@ class ChatwootComposer(models.TransientModel):
     chatwoot_id = fields.Many2one(
         'chatwoot.instance', 
         string="Instância", 
-        domain=[('account_id', '=', "1")],
+        default=lambda self: self.env['chatwoot.instance'].search(
+            [('account_id', '=', 1)],
+            limit=1
+        ),
     )
 
-    chatwoot_inbox_id = fields.Many2one(
-    "chatwoot.inbox",
-    string="Inbox",
-    domain="[('instance_id','=',chatwoot_id)]"
-)
-
-
-    chatwoot_user = fields.Selection(
-        selection=[
-            ('1', 'Carlos'),
-            ('3', 'Otavio Andretta'),
-            ('5', 'Guilherme Carvalho'),
-            ('6', 'Nil'),
-            ('7', 'Daniel Carvalho'),
-            ('8', 'Felipe'),
-            ('9', 'Manoel'),
-            ('10', 'Mauricio Silveira'),
-        ],
-        string="Usuário Chatwoot"
+    chatwoot_user_id = fields.Many2one(
+        "chatwoot.users",
+        string="Usuarios",
+        domain="[('instance_id','=',chatwoot_id)]"
     )
+
     chatwoot_team = fields.Selection(
         selection=[
             ('1', 'Suporte'),
@@ -80,7 +69,6 @@ class ChatwootComposer(models.TransientModel):
     @api.model
     def default_get(self, fields_x):
         res = super(ChatwootComposer, self).default_get(fields_x)
-
         if self.env.context.get('active_model') and self.env.context.get('active_id'):
             res['model'] = self.env.context['active_model']
             res['res_id'] = self.env.context['active_id']
@@ -158,20 +146,22 @@ class ChatwootComposer(models.TransientModel):
             raise UserError(_("Please enter a message or add an attachment."))
 
         record = self.env[self.model].browse(self.res_id) if self.model and self.res_id else None
+        token = self.chatwoot_user_id.api_token
 
         try:
-            if not self.chatwoot_inbox_id:
-                raise UserError(_("Selecione a Inbox do Chatwoot"))
+            if not self.chatwoot_user_id:
+                raise UserError(_("Selecione o Usuário do Chatwoot"))
 
             for partner in self.partner_id:
                 phone_number = f"{partner.phone_sanitized}"
 
                 conversation = self.chatwoot_id.create_new_conversation(
+                    token,
                     phone_number,
                     partner,
                     self.chatwoot_team,
-                    self.chatwoot_user,
-                    self.chatwoot_inbox_id
+                    self.chatwoot_user_id.code,
+                    self.chatwoot_user_id.inbox_ids[0]
                 )
 
                 conversation_id = conversation.get('id')
@@ -182,6 +172,7 @@ class ChatwootComposer(models.TransientModel):
                     first_attachment = self.attachment_ids[0]
 
                     self.chatwoot_id.send_chatwoot_attachment(
+                        token,
                         conversation_id,
                         first_attachment,
                         message=self.body
@@ -189,15 +180,16 @@ class ChatwootComposer(models.TransientModel):
 
                     for attachment in self.attachment_ids[1:]:
                         self.chatwoot_id.send_chatwoot_attachment(
+                            token,
                             conversation_id,
                             attachment
                         )
                 else:
-                    self.chatwoot_id.send_text(conversation_id, self.body)
+                    self.chatwoot_id.send_text(token,conversation_id, self.body)
 
                 if self.chatwoot_status == "resolved":
-                    self.chatwoot_id.add_label_to_conversation(conversation_id)
-                    self.chatwoot_id.set_resolved_conversation(conversation_id)
+                    self.chatwoot_id.add_label_to_conversation(token,conversation_id)
+                    self.chatwoot_id.set_resolved_conversation(token,conversation_id)
 
             if record:
                 names = ', '.join(self.partner_id.mapped('name'))
@@ -214,21 +206,4 @@ class ChatwootComposer(models.TransientModel):
             raise UserError(_("Failed to send WhatsApp message: %s") % e)
 
         return {'type': 'ir.actions.act_window_close'}
-
-        
-    @api.onchange('chatwoot_user')
-    def _onchange_chatwoot_user(self):
-        if not self.chatwoot_user:
-            self.chatwoot_id = False
-            return
-
-        instance = self.env['chatwoot.instance'].search(
-            [('code', '=', self.chatwoot_user)],
-            limit=1
-        )
-
-        if not instance:
-            raise UserError("Instância Chatwoot não encontrada para este usuário")
-
-        self.chatwoot_id = instance.id
 

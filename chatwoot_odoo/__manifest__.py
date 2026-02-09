@@ -23,6 +23,7 @@ associadas ao helpdesk, permitindo registro de conversas do Chatwoot como ticket
     'data': [
         'security/ir.model.access.csv',
         'views/chatwoot_view.xml',
+        'views/chatwoot_users_view.xml',
     ],
     'installable': True,
     'application': False,

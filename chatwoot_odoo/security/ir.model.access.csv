@@ -3,3 +3,5 @@ access_chatwoot_instance_user,access_chatwoot_instance_user,model_chatwoot_insta
 access_chatwoot_instance_manager,access_chatwoot_instance_manager,model_chatwoot_instance,base.group_system,1,1,1,1
 access_chatwoot_inbox_user,access_chatwoot_inbox_user,model_chatwoot_inbox,base.group_user,1,1,1,1
 access_chatwoot_inbox_manager,access_chatwoot_inbox_manager,model_chatwoot_inbox,base.group_system,1,1,1,1
+access_chatwoot_users_user,access_chatwoot_users_user,model_chatwoot_users,base.group_user,1,1,1,1
+access_chatwoot_users_manager,access_chatwoot_users_manager,model_chatwoot_users,base.group_system,1,1,1,1
