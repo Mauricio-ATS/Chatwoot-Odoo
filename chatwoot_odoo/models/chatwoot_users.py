@@ -18,7 +18,6 @@ class ChatwootUsers(models.Model):
 
     instance_id = fields.Many2one(
         "chatwoot.instance",
-        required=True,
         ondelete="cascade"
     )
 

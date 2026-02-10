@@ -3,7 +3,7 @@
 
 {
     'name': 'Integração Chatwoot-Odoo / Envio de Mensagens',
-    'version': '16.0.1.0',
+    'version': '18.0.1.0',
     'category': 'Others',
     'license': 'AGPL-3',
     'sequence': 2,
