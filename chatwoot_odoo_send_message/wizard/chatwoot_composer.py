@@ -23,11 +23,7 @@ class ChatwootComposer(models.TransientModel):
 
     chatwoot_id = fields.Many2one(
         'chatwoot.instance', 
-        string="Instância", 
-        default=lambda self: self.env['chatwoot.instance'].search(
-            [('account_id', '=', self.env.company.chatwoot_account_id)],
-            limit=1
-        ),
+        string="Instância",
     )
 
     chatwoot_user_id = fields.Many2one(
@@ -123,7 +119,7 @@ class ChatwootComposer(models.TransientModel):
                         attachment = inv.attachment_ids
                     res['attachment_ids'] = [(6, 0, attachment.ids)]
 
-        instance = self.env['chatwoot.instance'].search([('account_id', '=', '1')], limit=1)
+        instance = self.env['chatwoot.instance'].search([('account_id', '=', self.env.company.chatwoot_account_id)], limit=1)
         if instance:
             res['chatwoot_id'] = instance.id
 
