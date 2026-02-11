@@ -52,7 +52,10 @@ class HelpDeskTicket(models.Model):
             sender = conv.get("meta", {}).get("sender", {})
             company = sender.get("additional_attributes", {}).get("company_name")
             contact = company if company else sender.get("name")
-            phone = sender.get("phone_number").replace("+", "")
+            phone = sender.get("phone_number")
+            if not phone:
+                phone = sender.get("identifier")[:sender.get("identifier").find('-')]
+            phone = phone.replace("+", "")
             prt = self.get_partner(contact, phone)
 
             team = conv.get("meta", {}).get("team", {}).get("name")
