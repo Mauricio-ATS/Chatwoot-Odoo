@@ -1,7 +1,12 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 access_chatwoot_instance_user,access_chatwoot_instance_user,model_chatwoot_instance,base.group_user,1,1,1,1
 access_chatwoot_instance_manager,access_chatwoot_instance_manager,model_chatwoot_instance,base.group_system,1,1,1,1
+
 access_chatwoot_inbox_user,access_chatwoot_inbox_user,model_chatwoot_inbox,base.group_user,1,1,1,1
 access_chatwoot_inbox_manager,access_chatwoot_inbox_manager,model_chatwoot_inbox,base.group_system,1,1,1,1
+
 access_chatwoot_users_user,access_chatwoot_users_user,model_chatwoot_users,base.group_user,1,1,1,1
 access_chatwoot_users_manager,access_chatwoot_users_manager,model_chatwoot_users,base.group_system,1,1,1,1
+
+access_chatwoot_team_user,access_chatwoot_team_user,model_chatwoot_team,base.group_user,1,1,1,1
+access_chatwoot_team_manager,access_chatwoot_team_manager,model_chatwoot_team,base.group_system,1,1,1,1

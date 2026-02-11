@@ -21,7 +21,6 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form>
-                <!-- 👇 ADICIONADO — botão sync -->
                 <header>
                     <button name="action_sync_inboxes"
                             string="Sincronizar Inboxes"

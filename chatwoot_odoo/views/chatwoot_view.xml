@@ -1,26 +1,22 @@
 <?xml version="1.0"?>
 <odoo>
-    <record id="view_chatwoot_instance_list" model="ir.ui.view">
-        <field name="name">chatwoot.instance.list</field>
-        <field name="model">chatwoot.instance</field>
-        <field name="priority" eval="16"/>
-        <field name="type">list</field>
-        <field name="arch" type="xml">
-            <list>
-                <field name="base_url"/>
-                <field name="name"/>
-                <field name="user_ids" widget="many2many_tags"/>
-            </list>
-        </field>
-    </record>
-
     <record id="view_chatwoot_instance_form" model="ir.ui.view">
         <field name="name">chatwoot.instance.form</field>
         <field name="model">chatwoot.instance</field>
         <field name="priority" eval="16"/>
         <field name="type">form</field>
+
         <field name="arch" type="xml">
             <form>
+
+                <header>
+                    <button name="action_sync_teams"
+                            string="Sincronizar Teams"
+                            type="object"
+                            class="oe_highlight"
+                            icon="fa-refresh"/>
+
+                </header>
                 <sheet>
                     <group>
                         <field name="base_url"/>
@@ -28,16 +24,26 @@
                         <field name="account_id"/>
                         <field name="company_id"/>
                     </group>
-
-                    <group string="Usuarios">
-                        <field name="user_ids">
-                            <list>
-                                <field name="name"/>
-                                <field name="code"/>
-                                <field name="inbox_ids"  widget="many2many_tags"/>
-                            </list>
-                        </field>
-                    </group>
+                    <notebook>
+                        <page string="Usuários">
+                            <field name="user_ids">
+                                <list>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="inbox_ids" widget="many2many_tags"/>
+                                </list>
+                            </field>
+                        </page>
+                        <page string="Teams">
+                            <field name="team_ids">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="team_id"/>
+                                    <field name="active"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>
