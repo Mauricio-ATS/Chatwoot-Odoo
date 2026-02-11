@@ -9,7 +9,7 @@
             <list>
                 <field name="base_url"/>
                 <field name="name"/>
-                <field name="user_ids" widget="many2many"/>
+                <field name="user_ids" widget="many2many_tags"/>
             </list>
         </field>
     </record>
@@ -26,6 +26,7 @@
                         <field name="base_url"/>
                         <field name="name"/>
                         <field name="account_id"/>
+                        <field name="company_id"/>
                     </group>
 
                     <group string="Usuarios">
@@ -33,7 +34,7 @@
                             <list>
                                 <field name="name"/>
                                 <field name="code"/>
-                                <field name="inbox_ids"/>
+                                <field name="inbox_ids"  widget="many2many_tags"/>
                             </list>
                         </field>
                     </group>

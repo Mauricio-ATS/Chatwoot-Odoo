@@ -25,7 +25,7 @@ class ChatwootComposer(models.TransientModel):
         'chatwoot.instance', 
         string="Instância", 
         default=lambda self: self.env['chatwoot.instance'].search(
-            [('account_id', '=', 1)],
+            [('account_id', '=', self.env.company.chatwoot_account_id)],
             limit=1
         ),
     )
@@ -54,12 +54,24 @@ class ChatwootComposer(models.TransientModel):
     )
 
     inbox_id = fields.Many2one(
-    "chatwoot.inbox",
-    string="Inbox",
-    domain="[('user_chat_id','=',chatwoot_user_id)]",
-    required=True
-)
+        "chatwoot.inbox",
+        string="Inbox",
+        domain="[('user_chat_id','=',chatwoot_user_id)]",
+        required=True
+    )
 
+    user_inbox_count = fields.Integer(
+        string="Quantidade de Inboxes",
+        compute="_compute_user_inbox_count"
+    )
+
+    @api.depends('chatwoot_user_id')
+    def _compute_user_inbox_count(self):
+        for record in self:
+            if record.chatwoot_user_id:
+                record.user_inbox_count = len(record.chatwoot_user_id.inbox_ids)
+            else:
+                record.user_inbox_count = 0
 
     attachment_ids = fields.Many2many(
         'ir.attachment', 

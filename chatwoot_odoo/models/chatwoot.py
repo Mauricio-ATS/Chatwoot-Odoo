@@ -28,6 +28,10 @@ class ChatwootInstance(models.Model):
         help="ID da conta do Chatwoot"
     )
 
+    company_id = fields.Many2one(
+        "res.company", string="Company", default=lambda self: self.env.company
+    )
+
     def get_contact_id(self, token, phone_number, partner):
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/contacts/search"
         params = {

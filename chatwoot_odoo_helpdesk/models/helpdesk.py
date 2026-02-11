@@ -16,12 +16,15 @@ class HelpDeskTicket(models.Model):
 
     chatwoot_id = fields.Many2one(
         'chatwoot.instance', 
-        string="Instância",
-        domain=[('account_id', '=', "1")],
+        string="Instância", 
+        default=lambda self: self.env['chatwoot.instance'].search(
+            [('account_id', '=', self.env.company.chatwoot_account_id)],
+            limit=1
+        ),
     )
 
     def get_conversations_resolved(self):
-        self.chatwoot_id = chatwoot_id = self.env['chatwoot.instance'].search([("account_id", "=", "1")], limit=1)
+        self.chatwoot_id = chatwoot_id = self.env['chatwoot.instance'].search([("account_id", "=", self.env.company.chatwoot_account_id)], limit=1)
         url = f"{chatwoot_id.base_url}/api/v1/accounts/{chatwoot_id.account_id}/conversations"
         headers = {
             "api_access_token": chatwoot_id.user_ids[0].api_token
