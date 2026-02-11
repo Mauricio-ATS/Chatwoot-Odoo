@@ -53,6 +53,14 @@ class ChatwootComposer(models.TransientModel):
         string="Status"
     )
 
+    inbox_id = fields.Many2one(
+    "chatwoot.inbox",
+    string="Inbox",
+    domain="[('user_chat_id','=',chatwoot_user_id)]",
+    required=True
+)
+
+
     attachment_ids = fields.Many2many(
         'ir.attachment', 
         string="Anexos"
@@ -206,4 +214,12 @@ class ChatwootComposer(models.TransientModel):
             raise UserError(_("Failed to send WhatsApp message: %s") % e)
 
         return {'type': 'ir.actions.act_window_close'}
+    
 
+    @api.onchange("chatwoot_user_id")
+    def _onchange_chatwoot_user_id(self):
+        self.inbox_id = False
+        if self.chatwoot_user_id and len(self.chatwoot_user_id.inbox_ids) == 1:
+            self.inbox_id = self.chatwoot_user_id.inbox_ids[0]
+        
+   
