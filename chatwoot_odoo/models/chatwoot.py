@@ -34,10 +34,10 @@ class ChatwootInstance(models.Model):
     )
 
     team_ids = fields.One2many(
-    "chatwoot.team",
-    "instance_id",
-    string="Teams"
-)
+        "chatwoot.team",
+        "instance_id",
+        string="Teams"
+    )
 
 
     def get_contact_id(self, token, phone_number, partner):

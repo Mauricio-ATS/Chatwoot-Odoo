@@ -25,7 +25,8 @@
                     <button name="action_sync_inboxes"
                             string="Sincronizar Inboxes"
                             type="object"
-                            class="oe_highlight"/>
+                            class="oe_highlight"
+                    />
                 </header>
                 <sheet>
                     <group>
@@ -33,7 +34,6 @@
                         <field name="code"/>
                         <field name="api_token"/>
                     </group>
-
                     <group string="Inboxes">
                         <field name="inbox_ids">
                             <list editable="bottom">
