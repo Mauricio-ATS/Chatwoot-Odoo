@@ -4,6 +4,7 @@ import io
 import mimetypes
 import os
 from odoo import models, fields
+from odoo.exceptions import UserError
 
 class ChatwootUsers(models.Model):
     _name = 'chatwoot.users'
@@ -60,6 +61,7 @@ class ChatwootUsers(models.Model):
             else:
                 Inbox.create(vals)
 
+
 class ChatwootInbox(models.Model):
     _name = "chatwoot.inbox"
     _description = "Chatwoot Inbox"
@@ -72,3 +74,32 @@ class ChatwootInbox(models.Model):
         ondelete="cascade"
     )
     sequence = fields.Integer(default=10)
+
+
+class ChatwootTeam(models.Model):
+    _name = "chatwoot.team"
+    _description = "Chatwoot Team"
+
+    name = fields.Char(required=True)
+
+    team_id = fields.Integer(
+        required=True,
+        index=True
+    )
+
+    instance_id = fields.Many2one(
+        "chatwoot.instance",
+        required=True,
+        ondelete="cascade"
+    )
+
+    active = fields.Boolean(default=True)
+
+    _sql_constraints = [
+        ("team_instance_unique",
+         "unique(team_id, instance_id)",
+         "Team já existe para esta instância.")
+    ]
+
+
+   
