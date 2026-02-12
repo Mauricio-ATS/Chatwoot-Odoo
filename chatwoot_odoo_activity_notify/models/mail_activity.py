@@ -7,8 +7,11 @@ class MailActivity(models.Model):
 
     chatwoot_id = fields.Many2one(
         'chatwoot.instance', 
-        string="Instância",
-        domain=[('account_id', '=', "1")],
+        string="Instância", 
+        default=lambda self: self.env['chatwoot.instance'].search(
+            [('account_id', '=', self.env.company.chatwoot_account_id)],
+            limit=1
+        ),
     )
 
     
@@ -17,7 +20,7 @@ class MailActivity(models.Model):
         MailActivity = self.env['mail.activity']
 
         chatwoot = self.env['chatwoot.instance'].search(
-            [("account_id", "=", "1")],
+            [("account_id", "=", self.env.company.chatwoot_account_id)],
             limit=1
         )
 
@@ -25,7 +28,7 @@ class MailActivity(models.Model):
             return
 
         inbox = self.env['chatwoot.inbox'].search(
-            [('instance_id', '=', chatwoot.id)],
+            [('user_chat_id', '=', chatwoot.user_ids[0].id)],
             limit=1
         )
 

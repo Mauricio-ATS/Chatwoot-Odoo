@@ -9,7 +9,8 @@
             <tree>
                 <field name="base_url"/>
                 <field name="name"/>
-                <field name="user_ids" widget="many2many"/>
+                <field name="user_ids" widget="many2many_tags"/>
+                <field name="team_ids" widget="many2many_tags"/>
             </tree>
         </field>
     </record>
@@ -21,22 +22,40 @@
         <field name="type">form</field>
         <field name="arch" type="xml">
             <form>
+                <header>
+                    <button name="action_sync_teams"
+                            string="Sincronizar Teams"
+                            type="object"
+                            class="oe_highlight"
+                            icon="fa-refresh"/>
+                </header>
                 <sheet>
                     <group>
                         <field name="base_url"/>
                         <field name="name"/>
                         <field name="account_id"/>
+                        <field name="company_id"/>
                     </group>
-
-                    <group string="Usuarios">
-                        <field name="user_ids">
-                            <tree>
-                                <field name="name"/>
-                                <field name="code"/>
-                                <field name="inbox_ids"/>
-                            </tree>
-                        </field>
-                    </group>
+                    <notebook>
+                        <page string="Usuários">
+                            <field name="user_ids">
+                                <tree>
+                                    <field name="name"/>
+                                    <field name="code"/>
+                                    <field name="inbox_ids" widget="many2many_tags"/>
+                                </tree>
+                            </field>
+                        </page>
+                        <page string="Teams">
+                            <field name="team_ids">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                    <field name="team_id"/>
+                                    <field name="active"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
                 </sheet>
             </form>
         </field>

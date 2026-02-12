@@ -4,6 +4,7 @@ import io
 import mimetypes
 import os
 from odoo import models, fields
+from odoo.exceptions import UserError
 
 class ChatwootInstance(models.Model):
     _name = 'chatwoot.instance'
@@ -27,6 +28,17 @@ class ChatwootInstance(models.Model):
         default="1",
         help="ID da conta do Chatwoot"
     )
+
+    company_id = fields.Many2one(
+        "res.company", string="Company", default=lambda self: self.env.company
+    )
+
+    team_ids = fields.One2many(
+        "chatwoot.team",
+        "instance_id",
+        string="Teams"
+    )
+
 
     def get_contact_id(self, token, phone_number, partner):
         url = f"{self.base_url}/api/v1/accounts/{self.account_id}/contacts/search"
@@ -180,3 +192,36 @@ class ChatwootInstance(models.Model):
         }
         response = requests.post(url, json=payload, headers=headers, timeout=30)
         return response.json()
+    
+    def action_sync_teams(self):
+        self.ensure_one()
+
+        user = self.user_ids.filtered(lambda u: u.api_token)[:1]
+        if not user:
+            raise UserError("Nenhum usuário com API token")
+        url = f"{self.base_url}/api/v1/accounts/{self.account_id}/teams"
+        headers = {"api_access_token": user.api_token}
+        r = requests.get(url, headers=headers, timeout=30)
+        if r.status_code != 200:
+            raise UserError(r.text)
+        Team = self.env["chatwoot.team"]
+        data = r.json()  
+        for team in data:   
+            rec = Team.search([
+                ("team_id", "=", team["id"]),
+                ("instance_id", "=", self.id)
+            ], limit=1)
+
+            vals = {
+                "name": team["name"],
+                "team_id": team["id"],
+                "instance_id": self.id,
+                "active": True
+            }
+
+            if rec:
+                rec.write(vals)
+            else:
+                Team.create(vals)
+
+        return True

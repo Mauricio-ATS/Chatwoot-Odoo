@@ -23,28 +23,21 @@ class ChatwootComposer(models.TransientModel):
 
     chatwoot_id = fields.Many2one(
         'chatwoot.instance', 
-        string="Instância", 
-        default=lambda self: self.env['chatwoot.instance'].search(
-            [('account_id', '=', 1)],
-            limit=1
-        ),
+        string="Instância",
     )
 
     chatwoot_user_id = fields.Many2one(
         "chatwoot.users",
-        string="Usuarios",
+        string="Usuario",
         domain="[('instance_id','=',chatwoot_id)]"
     )
 
-    chatwoot_team = fields.Selection(
-        selection=[
-            ('1', 'Suporte'),
-            ('34', 'Financeiro'),
-            ('35', 'Comercial'),
-            ('36', 'ATS'),
-        ],
-        string="Time Chatwoot"
+    chatwoot_team = fields.Many2one(
+        "chatwoot.team",
+        string="Time",
+        domain="[('instance_id','=',chatwoot_id)]"
     )
+
     chatwoot_status = fields.Selection(
         selection=[
             ('open', 'Manter Aberta'),
@@ -52,6 +45,26 @@ class ChatwootComposer(models.TransientModel):
         ],
         string="Status"
     )
+
+    inbox_id = fields.Many2one(
+        "chatwoot.inbox",
+        string="Inbox",
+        domain="[('user_chat_id','=',chatwoot_user_id)]",
+        required=True
+    )
+
+    user_inbox_count = fields.Integer(
+        string="Quantidade de Inboxes",
+        compute="_compute_user_inbox_count"
+    )
+
+    @api.depends('chatwoot_user_id')
+    def _compute_user_inbox_count(self):
+        for record in self:
+            if record.chatwoot_user_id:
+                record.user_inbox_count = len(record.chatwoot_user_id.inbox_ids)
+            else:
+                record.user_inbox_count = 0
 
     attachment_ids = fields.Many2many(
         'ir.attachment', 
@@ -103,7 +116,7 @@ class ChatwootComposer(models.TransientModel):
                         attachment = inv.attachment_ids
                     res['attachment_ids'] = [(6, 0, attachment.ids)]
 
-        instance = self.env['chatwoot.instance'].search([('account_id', '=', '1')], limit=1)
+        instance = self.env['chatwoot.instance'].search([('account_id', '=', self.env.company.chatwoot_account_id)], limit=1)
         if instance:
             res['chatwoot_id'] = instance.id
 
@@ -206,4 +219,12 @@ class ChatwootComposer(models.TransientModel):
             raise UserError(_("Failed to send WhatsApp message: %s") % e)
 
         return {'type': 'ir.actions.act_window_close'}
+    
 
+    @api.onchange("chatwoot_user_id")
+    def _onchange_chatwoot_user_id(self):
+        self.inbox_id = False
+        if self.chatwoot_user_id and len(self.chatwoot_user_id.inbox_ids) == 1:
+            self.inbox_id = self.chatwoot_user_id.inbox_ids[0]
+        
+   

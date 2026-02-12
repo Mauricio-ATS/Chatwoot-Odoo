@@ -42,5 +42,6 @@
               name="Mensagens Prontas"
               parent="chatwoot_odoo.menu_chatwoot"
               action="action_chatwoot_message_template"
+              sequence="100"
               />
 </odoo>

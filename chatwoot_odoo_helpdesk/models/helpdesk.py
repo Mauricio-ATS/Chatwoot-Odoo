@@ -16,12 +16,15 @@ class HelpDeskTicket(models.Model):
 
     chatwoot_id = fields.Many2one(
         'chatwoot.instance', 
-        string="Instância",
-        domain=[('account_id', '=', "1")],
+        string="Instância", 
+        default=lambda self: self.env['chatwoot.instance'].search(
+            [('account_id', '=', self.env.company.chatwoot_account_id)],
+            limit=1
+        ),
     )
 
     def get_conversations_resolved(self):
-        self.chatwoot_id = chatwoot_id = self.env['chatwoot.instance'].search([("account_id", "=", "1")], limit=1)
+        self.chatwoot_id = chatwoot_id = self.env['chatwoot.instance'].search([("account_id", "=", self.env.company.chatwoot_account_id)], limit=1)
         url = f"{chatwoot_id.base_url}/api/v1/accounts/{chatwoot_id.account_id}/conversations"
         headers = {
             "api_access_token": chatwoot_id.user_ids[0].api_token
@@ -52,7 +55,10 @@ class HelpDeskTicket(models.Model):
             sender = conv.get("meta", {}).get("sender", {})
             company = sender.get("additional_attributes", {}).get("company_name")
             contact = company if company else sender.get("name")
-            phone = sender.get("phone_number").replace("+", "")
+            phone = sender.get("phone_number")
+            if not phone:
+                phone = sender.get("identifier")[:sender.get("identifier").find('-')]
+            phone = phone.replace("+", "")
             prt = self.get_partner(contact, phone)
 
             team = conv.get("meta", {}).get("team", {}).get("name")
