@@ -174,7 +174,7 @@ class ChatwootComposer(models.TransientModel):
                     partner,
                     self.chatwoot_team,
                     self.chatwoot_user_id.code,
-                    self.chatwoot_user_id.inbox_ids[0]
+                    self.inbox_id
                 )
 
                 conversation_id = conversation.get('id')
