@@ -3,7 +3,7 @@
 
 {
     'name': 'Odoo - Chatwoot / Notificação de Atividades',
-    'version': '16.0.1.0',
+    'version': '14.0.1.0',
     'category': 'Others',
     'license': 'AGPL-3',
     'sequence': 2,
