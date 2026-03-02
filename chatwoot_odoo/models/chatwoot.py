@@ -15,7 +15,7 @@ class ChatwootInstance(models.Model):
         help="URL base do Chatwoot"
     )
 
-    user_ids = fields.One2many(
+    user_ids = fields.Many2many(
         "chatwoot.users",
         "instance_id",
         string="Usuarios"
