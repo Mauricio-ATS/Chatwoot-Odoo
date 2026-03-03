@@ -90,6 +90,8 @@ class ChatwootComposer(models.TransientModel):
                 raise UserError(_("Este Contato deve ter um número de telefone válido"))
             if res['model'] == 'crm.lead' and not record.partner_id.mobile:
                 raise UserError(_("O Contato do Lead deve ter um número de telefone válido"))
+            if res['model'] == 'account.move' and not record.partner_id.mobile:
+                raise UserError(_("O Contato do Faturamento deve ter um número de telefone válido"))
             if hasattr(record, 'partner_id') and record.partner_id:
                 partner_ids = record.partner_id.ids
                 res['partner_id'] = [(6, 0, partner_ids)]
@@ -224,7 +226,7 @@ class ChatwootComposer(models.TransientModel):
     @api.onchange("chatwoot_user_id")
     def _onchange_chatwoot_user_id(self):
         self.inbox_id = False
-        if self.chatwoot_user_id and len(self.chatwoot_user_id.inbox_ids) == 1:
+        if self.chatwoot_user_id and self.chatwoot_user_id.inbox_ids:
             self.inbox_id = self.chatwoot_user_id.inbox_ids[0]
         
    
