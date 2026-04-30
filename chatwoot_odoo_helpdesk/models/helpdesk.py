@@ -23,8 +23,8 @@ class HelpDeskTicket(models.Model):
         ),
     )
 
-    def get_conversations_resolved(self):
-        self.chatwoot_id = chatwoot_id = self.env['chatwoot.instance'].search([("account_id", "=", self.env.company.chatwoot_account_id)], limit=1)
+    def get_conversations_resolved(self,instance_id):
+        self.chatwoot_id = chatwoot_id = self.env['chatwoot.instance'].browse(instance_id)
         url = f"{chatwoot_id.base_url}/api/v1/accounts/{chatwoot_id.account_id}/conversations"
         headers = {
             "api_access_token": chatwoot_id.user_ids[0].api_token
@@ -109,6 +109,9 @@ class HelpDeskTicket(models.Model):
             user = self.env['res.users'].search([('name', 'ilike', user_name)], limit=1) if user_name else user
             if not user:
                 user = self.env.ref('base.user_root')
+            elif all(user.name not in x.name for x in self.env['chatwoot.instance'].browse(instance_id).user_ids):
+                user_name = self.env['chatwoot.instance'].browse(instance_id).user_ids[0].name
+                user = self.env['res.users'].search([('name', 'ilike', user_name)], limit=1)
             ticket = self.env['helpdesk.ticket'].create({
                 'name': f"Chatwoot - {contact}",
                 'description': mensagem,
@@ -117,6 +120,7 @@ class HelpDeskTicket(models.Model):
                 'chatwoot_conversation_id': f"{conversation_id}2026",
                 'team_id': team_id,
                 'channel_id': 5,  # Suporte WhatsApp
+                'chatwoot_id': instance_id,
                 'stage_id': 4,  # Concluido
             })
             if prt.id == 1:
